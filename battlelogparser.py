@@ -18,8 +18,9 @@ def parse_battle(html):
     soup = BeautifulSoup(html, 'html.parser')
     script_tag = soup.find('script', {'class': 'battle-log-data'})
     log_text = script_tag.string.strip() if script_tag else ""
-    timestamps = []
 
+    timestamps = []
+    single_battle = []
     current_turn = 0
 
     current = {
@@ -62,7 +63,7 @@ def parse_battle(html):
             }
 
         elif '|switch|' in line:
-            pokemon = line.split('|')[2].split(':')[1]
+            pokemon = line.split('|')[2].split(':')[1].strip()
             new_health = eval_health(line)
             if 'p2a' in line:
                current['p2startmon'] = pokemon
@@ -108,7 +109,7 @@ def parse_battle(html):
 
     df = pd.DataFrame(turn_data)
     length = timestamps[-1] - timestamps[0] if timestamps else 0
-    return df, length
+    return single_battle, length
 
 # folder_path = input('folder path please: ')
 folder_path = '/Users/clintonnguyen/Downloads/battles'
@@ -119,10 +120,16 @@ for filename in os.listdir(folder_path):
     with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
         html = f.read()
 
-    df, battle_length = parse_battle(html)
-    df.to_excel('battle_log.xlsx', index=False)
+    battle_turns, battle_length = parse_battle(html)
+    turn_data.extend(battle_turns)
     print(f'Finished! {filename} took: {battle_length} seconds')
     lengths.append(abs(battle_length))
+
+df = pd.DataFrame(turn_data)
+current_file = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file)
+output = os.path.join(current_dir, 'battle_log.csv')
+df.to_csv(output, index=False)
 
 
 
